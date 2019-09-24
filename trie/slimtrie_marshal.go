@@ -55,7 +55,7 @@ func (st *SlimTrie) Unmarshal(buf []byte) error {
 
 	reader = bytes.NewReader(buf)
 
-	if vers.Check(ver, slimtrieVersion) {
+	if vers.Check(ver, slimtrieVersion, "==0.5.10") {
 		_, _, err := pbcmpl.Unmarshal(reader, st.nodes)
 		if err != nil {
 			return errors.WithMessage(err, "failed to unmarshal nodes")

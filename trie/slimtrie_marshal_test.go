@@ -60,11 +60,11 @@ func TestSlimTrie_Unmarshal_incompatible(t *testing.T) {
 		input string
 		want  error
 	}{
-		{slimtrieVersion, nil},
 		{"0.5.11", ErrIncompatible},
 		{"0.6.0", ErrIncompatible},
 		{"0.9.9", ErrIncompatible},
-		{"1.0.1", ErrIncompatible},
+		{slimtrieVersion, nil},
+		{"1.0.2", ErrIncompatible},
 	}
 
 	for i, c := range cases {

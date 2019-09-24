@@ -1,3 +1,3 @@
 package trie
 
-const slimtrieVersion = "0.5.10"
+const slimtrieVersion = "1.0.1"
