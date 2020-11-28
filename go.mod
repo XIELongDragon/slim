@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/blang/semver v3.5.1+incompatible // indirect
-	github.com/golang/protobuf v1.3.1
+	github.com/golang/protobuf v1.4.3
 	github.com/google/btree v1.0.0
 	github.com/kr/pretty v0.2.1
 	github.com/mattn/go-runewidth v0.0.4 // indirect
