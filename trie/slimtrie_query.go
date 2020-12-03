@@ -177,6 +177,11 @@ func (st *SlimTrie) GetID(key string) int32 {
 
 		if i == l {
 			// must be a leaf
+			// the key finished and matches the 0-th bit in the bitmap
+			// In this case, the leaf has no prefix, other with it wont be the 0-th bit.
+			// And qr.worSize is 0
+			// Thus there is no need to check LeafPrefix.
+			// TODO test and optimize this
 			break
 		}
 
@@ -327,25 +332,29 @@ func (st *SlimTrie) searchID(key string) (lID, eqID, rID int32) {
 		lID = st.rightMost(lID)
 	}
 	if rID != -1 {
-		rID = st.leftMost(rID)
+		rID = st.leftMost(rID, nil)
 	}
 
 	return
 }
 
-func (st *SlimTrie) leftMost(idx int32) int32 {
+func (st *SlimTrie) leftMost(idx int32, path *[]int32) int32 {
 
 	ns := st.inner
+	qr := &querySession{}
 
 	for {
+		if path != nil {
+			*path = append(*path, idx)
+		}
 
-		qr := &querySession{}
-
+		qr.isInner = false
 		st.getInner(idx, qr)
 		if !qr.isInner {
 			break
 		}
 
+		// follow the first child
 		r0, _ := bitmap.Rank128(ns.Inners.Words, ns.Inners.RankIndex, qr.from)
 		idx = r0 + 1
 	}
@@ -476,6 +485,29 @@ func (st *SlimTrie) getInner(nodeid int32, qr *querySession) {
 	}
 }
 
+// getLabelIdx returns the index of label of an inner node a key pointing to.
+func (st *SlimTrie) getLabelIdx(qr *querySession, keyBitIdx int32) int32 {
+	ithBit := int32(0)
+
+	if keyBitIdx < qr.keyBitLen {
+
+		if qr.wordSize == bigWordSize {
+			ithBit = 1 + int32(qr.key[keyBitIdx>>3])
+		} else {
+
+			b := qr.key[keyBitIdx>>3]
+
+			if keyBitIdx&7 < 4 {
+				b >>= 4
+			}
+			b &= 0xf
+
+			ithBit = 1 + int32(b)
+		}
+	}
+	return ithBit
+}
+
 // getLeftChildID returns the node id of the child on the left to the node current label pointing to,
 // and if the current label bit is set.
 // the left-child-id is the rank upto the ithBit(exclude),
@@ -491,24 +523,7 @@ func (st *SlimTrie) getLeftChildID(qr *querySession, ki int32) (int32, int32) {
 
 	ns := st.inner
 
-	ithBit := int32(0)
-
-	if ki < qr.keyBitLen {
-
-		if qr.wordSize == bigWordSize {
-			ithBit = 1 + int32(qr.key[ki>>3])
-		} else {
-
-			b := qr.key[ki>>3]
-
-			if ki&7 < 4 {
-				b >>= 4
-			}
-			b &= 0xf
-
-			ithBit = 1 + int32(b)
-		}
-	}
+	ithBit := st.getLabelIdx(qr, ki)
 
 	if qr.to-qr.from == ns.ShortSize {
 
@@ -567,14 +582,37 @@ func (st *SlimTrie) getIthLeaf(ith int32) interface{} {
 	return v
 }
 
+func (st *SlimTrie) getIthLeafBytes(ith int32) []byte {
+
+	ls := st.inner.Leaves
+	if ls == nil {
+		return nil
+	}
+
+	// TODO use FixedSize or bitmap for var-len leaves
+	// TODO it is possible there is a absent leaf
+	size := st.encoder.GetEncodedSize(nil)
+	idx := ith * int32(size)
+
+	return ls.Bytes[idx : idx+int32(size)]
+}
+
 func (st *SlimTrie) getLabels(qr *querySession) []uint64 {
+	bm, _ := st.getInnerBM(qr)
+	return bmtree.Decode(qr.to-qr.from, bm)
+}
+
+// getInnerBM retrieves the inner node bitmap cached by a querySession, and the size of bitmap.
+func (st *SlimTrie) getInnerBM(qr *querySession) ([]uint64, int32) {
 
 	ns := st.inner
 
-	if qr.to-qr.from == ns.ShortSize {
-		return bmtree.Decode(innerSize, []uint64{qr.bm})
+	storedBMSize := qr.to - qr.from
+
+	if storedBMSize == ns.ShortSize {
+		return bmtree.Decode(innerSize, []uint64{qr.bm}), innerSize
 	}
 
-	bm := bitmap.Slice(ns.Inners.Words, qr.from, qr.to)
-	return bmtree.Decode(qr.to-qr.from, bm)
+	// normal or big inner node
+	return bitmap.Slice(ns.Inners.Words, qr.from, qr.to), storedBMSize
 }
