@@ -205,6 +205,7 @@ func before000510ToNewChildrenArray(st *SlimTrie, ver string, ch *array.Array32,
 
 		ns := c.build()
 		st.inner = ns
+		st.initLevels()
 	}
 }
 

@@ -114,10 +114,6 @@ func (st *SlimTrie) getGEPath(key string) []int32 {
 
 	for {
 
-		qr.isInner = false
-		qr.prefixLen = 0
-		qr.hasPrefixContent = false
-
 		st.getInner(eqID, qr)
 		if !qr.isInner {
 			// leaf

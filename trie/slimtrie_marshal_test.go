@@ -144,6 +144,7 @@ func TestSlimTrie_MarshalUnmarshal(t *testing.T) {
 	st2.Reset()
 	empty := &SlimTrie{
 		encoder: encode.Int{},
+		levels:  []levelInfo{{0, 0, 0}},
 		inner:   &Slim{},
 	}
 	if !reflect.DeepEqual(st2, empty) {

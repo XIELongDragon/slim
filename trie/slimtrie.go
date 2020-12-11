@@ -74,7 +74,23 @@ const (
 // Since 0.2.0
 type SlimTrie struct {
 	inner   *Slim
+	levels  []levelInfo
 	encoder encode.Encoder
+}
+
+// levelInfo records node count upto every level(inclusive).
+// The 0-th elt is always 0,0,0. An empty slim has only one level.
+// The 1th elt describe root node in slim.
+// The 1th elt is 1,0,1 if the slim has only one (leaf) node.
+// The 1th elt is 1,1,0 if the slim has more than one nodes.
+//
+// Since 0.5.11
+type levelInfo struct {
+	// total number of nodes
+	// number of inner nodes
+	// number of leaf nodes
+	// 	total = inner + leaf
+	total, inner, leaf int32
 }
 
 // Opt specifies options for creating a SlimTrie.
@@ -215,10 +231,12 @@ func NewSlimTrie(e encode.Encoder, keys []string, values interface{}, opts ...Op
 		return nil, err
 	}
 
-	return &SlimTrie{
+	st := &SlimTrie{
 		inner:   ns,
 		encoder: e,
-	}, nil
+	}
+	st.initLevels()
+	return st, nil
 }
 
 // func (st *SlimTrie) GetStat() map[string]float64 {

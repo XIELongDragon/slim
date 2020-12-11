@@ -623,6 +623,52 @@ func (ns *Slim) initLeaves(elts [][]byte) {
 	ns.Leaves.Bytes = lb
 }
 
+func (st *SlimTrie) initLevels() {
+	ns := st.inner
+
+	if ns.NodeTypeBM == nil {
+		st.levels = []levelInfo{{0, 0, 0}}
+		return
+	}
+
+	st.levels = make([]levelInfo, 0)
+
+	totalInner, b := bitmap.Rank64(ns.NodeTypeBM.Words, ns.NodeTypeBM.RankIndex, int32(len(ns.NodeTypeBM.Words)*64-1))
+	totalInner += b
+
+	// single leaf slim
+	total := int32(1)
+	if totalInner > 0 {
+		var b int32
+		total, b = bitmap.Rank128(ns.Inners.Words, ns.Inners.RankIndex, int32(len(ns.Inners.Words)*64-1))
+		total += b + 1
+	}
+
+	currId := int32(0)
+
+	qr := &querySession{}
+	for {
+		// currId is the first node id at current level
+
+		nextInnerIdx, _ := bitmap.Rank64(ns.NodeTypeBM.Words, ns.NodeTypeBM.RankIndex, currId)
+
+		// update prev level
+		st.levels = append(st.levels, levelInfo{total: currId, inner: nextInnerIdx, leaf: currId - nextInnerIdx})
+
+		if nextInnerIdx == totalInner {
+			// no more inner node at this level, this is the bottom level
+			break
+		}
+
+		st.getIthInnerFrom(nextInnerIdx, qr)
+
+		leftMostChild, _ := bitmap.Rank128(ns.Inners.Words, ns.Inners.RankIndex, qr.from)
+		currId = leftMostChild + 1
+	}
+
+	st.levels = append(st.levels, levelInfo{total: total, inner: totalInner, leaf: total - totalInner})
+}
+
 func stepToPos(steps []int32, shift int32) []int32 {
 
 	mask := int32(bitmap.Mask[shift])
