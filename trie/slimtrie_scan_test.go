@@ -1,12 +1,10 @@
 package trie
 
 import (
-	"fmt"
 	"sort"
 	"testing"
 
 	"github.com/openacid/slim/encode"
-	"github.com/openacid/testkeys"
 	"github.com/stretchr/testify/require"
 )
 
@@ -186,35 +184,16 @@ func TestSlimTrie_Scan_slimWithoutValue(t *testing.T) {
 
 func TestSlimTrie_Scan_large(t *testing.T) {
 
-	for _, typ := range testkeys.AssetNames() {
+	testBigKeySet(t, func(t *testing.T, keys []string) {
+		ta := require.New(t)
 
-		t.Run(fmt.Sprintf("keyset: %s", typ), func(t *testing.T) {
-			ta := require.New(t)
-			keys := getKeys(typ)
-			n := len(keys)
-			if n >= 1000 {
-				iambig(t)
-			}
+		values := makeI32s(len(keys))
 
-			if n >= 500*1024 {
-				t.Skip()
-			}
+		st, err := NewSlimTrie(encode.I32{}, keys, values, Opt{Complete: Bool(true)})
+		ta.NoError(err)
 
-			values := makeI32s(len(keys))
-
-			st, err := NewSlimTrie(encode.I32{}, keys, values, Opt{Complete: Bool(true)})
-			ta.NoError(err)
-
-			if n > 10*1024 {
-				n = 10 * 1024
-			}
-			if n < 50 {
-				n = 50
-			}
-
-			subTestScan(t, st, keys, randVStrings(n, 0, 10))
-		})
-	}
+		subTestScan(t, st, keys, randVStrings(clap(len(keys), 50, 10*1024), 0, 10))
+	})
 }
 
 var OutputScan int
@@ -285,7 +264,7 @@ func subTestScan(
 			nxt := st.Scan(sk, true)
 
 			var i int32
-			for i = int32(idx); i < int32(len(keys)) && i < int32(idx+1024); i++ {
+			for i = int32(idx); i < int32(len(keys)) && i < int32(idx+200); i++ {
 				key := keys[i]
 				gotKey, gotVal := nxt()
 				ta.Equal([]byte(key), gotKey, "scan from: %s %v, idx: %d", sk, []byte(sk), idx)
