@@ -26,7 +26,7 @@ func (st *SlimTrie) scan(path []int32, withValue bool) NextRaw {
 	for i := int32(0); i < int32(len(path)-1); i++ {
 
 		qr := &querySession{}
-		st.getInner(path[i], qr)
+		st.getNode(path[i], qr)
 
 		stackIdx++
 		v := &stack[stackIdx]
@@ -53,7 +53,7 @@ func (st *SlimTrie) scan(path []int32, withValue bool) NextRaw {
 
 			childId := last.firstChildId + last.ithLabel
 			qr := &querySession{}
-			st.getInner(childId, qr)
+			st.getNode(childId, qr)
 			if !qr.isInner {
 				last.appendLeafPrefix(&buf, qr)
 				if withValue {
@@ -114,7 +114,7 @@ func (st *SlimTrie) getGEPath(key string) []int32 {
 
 	for {
 
-		st.getInner(eqID, qr)
+		st.getNode(eqID, qr)
 		if !qr.isInner {
 			// leaf
 			break

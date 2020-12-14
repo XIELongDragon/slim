@@ -163,7 +163,7 @@ func (st *SlimTrie) GetID(key string) int32 {
 
 	for {
 
-		st.getInner(eqID, qr)
+		st.getNode(eqID, qr)
 		if !qr.isInner {
 			// leaf
 			break
@@ -249,7 +249,7 @@ func (st *SlimTrie) GetIndex(key string) int32 {
 	keyIdx := int32(0)
 
 	for {
-		st.getInner(cur.id, qr)
+		st.getNode(cur.id, qr)
 		if !qr.isInner {
 			// leaf
 			break
@@ -323,7 +323,7 @@ func (st *SlimTrie) GetLRIndex(key string) (int32, int32) {
 	keyIdx := int32(0)
 
 	for {
-		st.getInner(eqCur.id, qr)
+		st.getNode(eqCur.id, qr)
 		if !qr.isInner {
 			// leaf
 			break
@@ -476,7 +476,7 @@ func (st *SlimTrie) searchID(key string) (lID, eqID, rID int32) {
 
 	for {
 
-		st.getInner(eqID, qr)
+		st.getNode(eqID, qr)
 		if !qr.isInner {
 			// leaf
 			break
@@ -574,7 +574,7 @@ func (st *SlimTrie) leftMost(idx int32, path *[]int32) int32 {
 			*path = append(*path, idx)
 		}
 
-		st.getInner(idx, qr)
+		st.getNode(idx, qr)
 		if !qr.isInner {
 			break
 		}
@@ -592,7 +592,7 @@ func (st *SlimTrie) rightMost(idx int32) int32 {
 
 	for {
 		qr := &querySession{}
-		st.getInner(idx, qr)
+		st.getNode(idx, qr)
 		if !qr.isInner {
 			break
 		}
@@ -613,7 +613,7 @@ func (st *SlimTrie) rightMostCursor(pos *walkingCursor) {
 	for {
 		qr := &querySession{}
 		// TODO simplify getInnerTo
-		st.getInner(pos.id, qr)
+		st.getNode(pos.id, qr)
 		if !qr.isInner {
 			return
 		}
@@ -652,7 +652,7 @@ func (st *SlimTrie) getLeafPrefix(nodeid int32, qr *querySession) {
 	}
 }
 
-func (st *SlimTrie) getInner(nodeid int32, qr *querySession) {
+func (st *SlimTrie) getNode(nodeid int32, qr *querySession) {
 
 	ns := st.inner
 
