@@ -54,7 +54,7 @@ func (st *SlimTrie) scan(path []int32, withValue bool) NextRaw {
 			childId := last.firstChildId + last.ithLabel
 			qr := &querySession{}
 			st.getNode(childId, qr)
-			if !qr.isInner {
+			if qr.isInner == 0 {
 				last.appendLeafPrefix(&buf, qr)
 				if withValue {
 					leafI, _ := st.getLeafIndex(childId)
@@ -115,15 +115,15 @@ func (st *SlimTrie) getGEPath(key string) []int32 {
 	for {
 
 		st.getNode(eqID, qr)
-		if !qr.isInner {
+		if qr.isInner == 0 {
 			// leaf
 			break
 		}
 
-		if qr.hasPrefixContent {
-			r := prefixCompare(key[i>>3:], qr.prefix)
+		if qr.hasInnerPrefix {
+			r := prefixCompare(key[i>>3:], qr.innerPrefix)
 			if r == 0 {
-				i = i&(^7) + qr.prefixLen
+				i = i&(^7) + qr.innerPrefixLen
 			} else if r < 0 {
 				rID = eqID
 				rightPathLen = int32(len(path))
@@ -216,8 +216,8 @@ func (v *scanStackElt) init(st *SlimTrie, parentId, childId int32, qr *querySess
 	ns := st.inner
 	prefStart := bufBitIdx
 	prefEnd := prefStart
-	if qr.hasPrefixContent {
-		prefEnd = bufBitIdx&(^7) + qr.prefixLen
+	if qr.hasInnerPrefix {
+		prefEnd = bufBitIdx&(^7) + qr.innerPrefixLen
 	}
 
 	// childId = rank_inclusive(globalLabelBitIdx)
@@ -327,8 +327,8 @@ func (v *scanStackElt) appendLabel(buf *[]byte) {
 }
 
 func (v *scanStackElt) appendInnerPrefix(buf *[]byte, qr *querySession) {
-	if qr.hasPrefixContent {
-		*buf = append((*buf)[:v.prefixStart>>3], qr.prefix[1:]...)
+	if qr.hasInnerPrefix {
+		*buf = append((*buf)[:v.prefixStart>>3], qr.innerPrefix[1:]...)
 	}
 }
 

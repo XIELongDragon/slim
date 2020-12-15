@@ -133,7 +133,7 @@ func (s *slimTrieStringly) NodeInfo(node interface{}) string {
 		*n = emp
 
 		s.st.getNode(nid, n)
-		step := n.prefixLen
+		step := n.innerPrefixLen
 		if step > 0 {
 			return fmt.Sprintf("+%d", step)
 		}
